@@ -245,7 +245,28 @@ bool HLPlanner::checkTargetReached()
         this->is_route = true;
 
         // Reconstruct the path
-
+        this->route.push_front(this->nodes.back());
+        int index = this->nodes.size()-1;
+        while ( this->parent[index] != index )
+        {
+            int parent = this->parent[index];
+            cout << "Parent: " << parent << " at index: " << " node: " << this->nodes[parent].x << " : " <<
+                                                        this->nodes[parent].y << endl;
+            this->route.push_front(this->nodes[parent]);
+            index = parent;
+        }
+        cout << "Number of nodes in route: " << this->route.size() << endl;
+        // cout << "First parent: " << parent[parent[parent.back()]] << endl;
+        // int temp = parent.back(); 
+        // int temp1 = parent[temp];
+        // int temp2 = parent[temp1];
+        // cout << "First parent: " << temp << " node: " << this->nodes[temp].x << " : " <<
+        //                                                 this->nodes[temp].y << endl;
+        // cout << "Second parent: " << temp1 << " node: " << this->nodes[temp1].x << " : " <<
+        //                                                 this->nodes[temp1].y << endl;
+        // cout << "Third parent: " << temp2 << " node: " << this->nodes[temp2].x << " : " <<
+        //                                                 this->nodes[temp2].y << endl;
+        
         return true;
     }
     return false;
@@ -282,9 +303,10 @@ bool HLPlanner::planRoute(vector <Point> &nodes)
     this->start = {this->vehicle.length/2, 0};
 
     this->nodes.push_back(start);
+    this->parent.push_back(0);
 
     Point new_point, closest_point, next_point(0, 0);
-    int closest_index = 0, iterations = 0;
+    int closest_index, iterations = 0;
     // double min_cost = INF;
 
     while ( !this->is_route && iterations < this->max_iter-1 )
@@ -299,8 +321,12 @@ bool HLPlanner::planRoute(vector <Point> &nodes)
         // => such that the tree is ordered [..., closest_point, new_point, ...]
         // => and each edge is obstacle free
         closest_point = *this->nodes.begin();
-        for (auto node : this->nodes)
+        closest_index = 0;
+
+        for (auto it = this->nodes.begin(); it != this->nodes.end(); it++)
         {
+            Point node = *it;
+ 
         // 5. Check for collisions
         // => closest point in the tree to the new random point
         // => If the edge between the closest point and the new point is obstacle free
@@ -309,7 +335,8 @@ bool HLPlanner::planRoute(vector <Point> &nodes)
                  isEdgeObstacleFree(node,node.steer(new_point, this->s_max),this->obstacles) )
             {
                 closest_point = node;                       // used to reconstruct final path
-                closest_index = &node - &this->nodes[0];    // used to reconstruct final path
+                closest_index = it - this->nodes.begin();    // used to reconstruct final path
+                // closest_index = node - this->nodes[0];    // used to reconstruct final path
             }
         }
         // 4. Steer the tree towards the random point

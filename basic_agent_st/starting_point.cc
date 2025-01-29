@@ -150,8 +150,8 @@ int main(int argc, const char * argv[]) {
                 manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
                 for ( int i = 0; i < 20; i++ )
                 {
-                    int n_index = nodes.size()-i-1;
-                    // int n_index = i;
+                    // int n_index = nodes.size()-i-1;
+                    int n_index = i;
                     cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
                     // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
                     manoeuvre_msg.data_struct.TrajectoryPointIX[i] = nodes[n_index].x;
