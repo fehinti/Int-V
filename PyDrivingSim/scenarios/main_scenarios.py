@@ -29,7 +29,7 @@ class AutonomousVehicle():
         # Initialize the vehicle
         self.vehicle = Vehicle()
         self.vehicle.set_screen_here()
-        self.vehicle.set_pos_ang((0, -1, 0.5))
+        self.vehicle.set_pos_ang((0, 0, 0))
 
         #Initialize the agent
         self.agent = Agent(self.vehicle)
@@ -60,8 +60,8 @@ class AutonomousVehicle():
 
 class BasicTrafficLight():
     def __init__(self):
-        cone = TrafficCone()
-        cone.set_pos((1.0,0))
+        # cone = TrafficCone()
+        # cone.set_pos((1.0,0))
         cone = TrafficCone()
         cone.set_pos((1.0,2))
         cone = TrafficCone()
@@ -95,13 +95,19 @@ class BasicLateralControllerTest():
 class AddPoint():
     def __init__(self, av:AutonomousVehicle):
         self.points = []
+        self.last_point = None
         self.av = av
 
     def update(self):
         if self.points.__len__() == 0:
+            for point in self.av.trajectory:
+                self.points.append(Point(point[0],point[1]))
+        elif self.av.trajectory[-1] != self.last_point:
             for point in self.points:
                 point.reset()
             self.points.clear()
             for point in self.av.trajectory:
                 self.points.append(Point(point[0],point[1]))
+        if self.av.trajectory.__len__() > 0:
+            self.last_point = self.av.trajectory[-1]
                 # print(self.av.trajectory.__len__())

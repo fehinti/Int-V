@@ -181,6 +181,12 @@ void HLPlanner::setLaneWidth(double width)
     this->lane_width = width;
 }
 
+void HLPlanner::setStart(Point start)
+{
+    this->start = start;
+    cout << "start set to: " << start.x << " " << start.y << endl;
+}
+
 void HLPlanner::setTarget(Point target)
 {
     this->target = target;
@@ -195,6 +201,16 @@ void HLPlanner::setSMax(double s_max)
 Point HLPlanner::getTarget()
 {
     return this->target;
+}
+
+bool HLPlanner::getRoute( deque < Point > &route )
+{
+    if ( this->is_route )
+    {
+        route = this->route;
+        return true;
+    }
+    return false;
 }
 
 void HLPlanner::setMaxIter(int max_iter)
@@ -234,7 +250,7 @@ Point HLPlanner::randomPoint()
     // {
     //     return {this->target->x-this->vehicle_width/2, this->target->x+this->vehicle_width/2};
     // }
-    return Point{RNG(this->start.x, this->target.x), RNG(-this->lane_width/2, this->lane_width/2)};
+    return Point{RNG(this->vehicle.length, this->target.x), RNG(-this->lane_width/2, this->lane_width/2)};
 }
 
 bool HLPlanner::checkTargetReached()
@@ -250,22 +266,12 @@ bool HLPlanner::checkTargetReached()
         while ( this->parent[index] != index )
         {
             int parent = this->parent[index];
-            cout << "Parent: " << parent << " at index: " << " node: " << this->nodes[parent].x << " : " <<
-                                                        this->nodes[parent].y << endl;
+            // cout << "Parent: " << parent << " at index: " << " node: " << this->nodes[parent].x << " : " <<
+                                                        // this->nodes[parent].y << endl;
             this->route.push_front(this->nodes[parent]);
             index = parent;
         }
         cout << "Number of nodes in route: " << this->route.size() << endl;
-        // cout << "First parent: " << parent[parent[parent.back()]] << endl;
-        // int temp = parent.back(); 
-        // int temp1 = parent[temp];
-        // int temp2 = parent[temp1];
-        // cout << "First parent: " << temp << " node: " << this->nodes[temp].x << " : " <<
-        //                                                 this->nodes[temp].y << endl;
-        // cout << "Second parent: " << temp1 << " node: " << this->nodes[temp1].x << " : " <<
-        //                                                 this->nodes[temp1].y << endl;
-        // cout << "Third parent: " << temp2 << " node: " << this->nodes[temp2].x << " : " <<
-        //                                                 this->nodes[temp2].y << endl;
         
         return true;
     }
@@ -275,12 +281,21 @@ bool HLPlanner::checkTargetReached()
 // Funtion - returns true if edge (line segment) between points a and b is obstacle free
 bool isEdgeObstacleFree(Point a, Point b, const vector<Obs> &obstacles)
 {
+    static bool print = true;
     for (auto obs : obstacles)
     {
         vector<Point> points = {{obs.x+obs.width/2, obs.y+obs.length/2},
                                 {obs.x-obs.width/2, obs.y+obs.length/2},
                                 {obs.x-obs.width/2, obs.y-obs.length/2},
                                 {obs.x+obs.width/2, obs.y-obs.length/2}};
+        if (print) 
+        {
+            // cout << "Obstacle at: " << obs.x << " : " << obs.y << endl;
+            // cout << "Points: " << points[0].x << " : " << points[0].y
+            //          << " | "  << points[1].x << " : " << points[1].y
+            //          << " | "  << points[2].x << " : " << points[2].y 
+            //          << " | "  << points[3].x << " : " << points[3].y<< endl;
+        }
         Polygon poly;
         for (auto p : points)
         {
@@ -291,6 +306,7 @@ bool isEdgeObstacleFree(Point a, Point b, const vector<Obs> &obstacles)
             return false;
         }
     }
+    print = false;
     return true;
 }
 
@@ -300,7 +316,7 @@ bool HLPlanner::planRoute(vector <Point> &nodes)
     this->nodes.clear();
 
     // 1. Initialize the tree with the start point
-    this->start = {this->vehicle.length/2, 0};
+    // this->start = {this->vehicle.length/2, 0};
 
     this->nodes.push_back(start);
     this->parent.push_back(0);

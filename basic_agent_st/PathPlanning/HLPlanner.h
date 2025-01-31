@@ -158,12 +158,14 @@ public:
     void setVehicle(Veh vehicle);
 
     void setLaneWidth(double width);
+    void setStart(Point start);
     void setTarget(Point target);
     void setSMax(double s_max);
     void setMaxIter(int max_iter);
 
     // Getter functions
     Point getTarget();
+    bool getRoute(deque < Point > &route);
 
     void addObstacle(Obs obs);
     bool clearObstacles();

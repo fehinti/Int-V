@@ -33,6 +33,7 @@ extern "C" {
 // CUSTOM Function Prototypes - BEGIN
 
 int IsCoeffZero( const double coeffs[] );
+void MovingAverage( double *avg, double val, int n );
 
 // CUSTOM Function Prototypes - END
 
@@ -47,12 +48,6 @@ void intHandler(int signal) {
     server_run = 0;
 }
 
-typedef struct PlanarPose
-{
-    double x;
-    double y;
-    double yaw;
-} Pos;
 
 int main(int argc, const char * argv[]) {
     logger.enable(true);
@@ -122,14 +117,37 @@ int main(int argc, const char * argv[]) {
             double sf = in->TrfLightDist;
             double min_T, max_T;
 
-            // RRT* High Level Planner - BEGIN
+            // LATERAL CONTROLLER [First part of the controller] - BEGIN
+            //
+            // 1. Approximate vehicle position from ORIGIN [0,0]
+            static double init_lat_offsL = in->LatOffsLineL; // initial lateral position of the vehicle
+            static double last_lat_offsL = in->LatOffsLineL;
+            static double last_dist_travelled = dist_travelled;
+            double curr_lat_offsL = in->LatOffsLineL;
+            Point curr_vehicle_pos = { dist_travelled-last_dist_travelled, last_lat_offsL-curr_lat_offsL };
+            // Point veh_pt = { dist_travelled, curr_lat_offsL };
 
-            // double rrt_lkahd = fmax( 50, v0*5 );
+            static int i = 0;
+            if ( i % 10 == 0 )
+            {
+                last_lat_offsL = curr_lat_offsL;
+                last_dist_travelled = dist_travelled;
+            }
+            i++;
+            //
+            // LATERAL CONTROLLER [First part of the controller] - END
+
+            
+            // RRT* High Level Planner - BEGIN
+            //
+            double rrt_lkahd = fmax( 50, v0*5 );
             static bool rrt_params_flag = true;
 
             if ( rrt_params_flag )
             {
                 hl_planner.setLaneWidth(in->LaneWidth);
+                hl_planner.setStart({in->VehicleLen,0});
+                // hl_planner.setStart({in->VehicleLen,in->LatOffsLineL});
                 hl_planner.setTarget({in->TrfLightDist,-in->LaneWidth/4});
                 hl_planner.setSMax(5);
                 hl_planner.setMaxIter(10000);
@@ -140,27 +158,38 @@ int main(int argc, const char * argv[]) {
                 for ( int i = 0; i < in->NrObjs; i++ )
                 {
                     hl_planner.addObstacle( { in->ObjX[i], in->ObjY[i],
-                                             in->ObjWidth[i], in->ObjLen[i] } );
+                                             in->ObjWidth[i]*2, in->ObjLen[i]*2 } );
                 }
 
                 hl_planner.planRoute( nodes );
+                hl_planner.getRoute( route );
                 Point target = hl_planner.getTarget();
                 cout << "Total nodes: " << nodes.size() << endl;
                 
-                manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
-                for ( int i = 0; i < 20; i++ )
-                {
-                    // int n_index = nodes.size()-i-1;
-                    int n_index = i;
-                    cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
-                    // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
-                    manoeuvre_msg.data_struct.TrajectoryPointIX[i] = nodes[n_index].x;
-                    manoeuvre_msg.data_struct.TrajectoryPointIY[i] = nodes[n_index].y;
-                }
 
                     rrt_params_flag = false;
             }
 
+            static int route_cnt = 0;
+            if ( dist_travelled > route[route_cnt].x && route_cnt < route.size() )
+            {
+                route.pop_front();
+                route_cnt++;
+                cout << "Route count: " << route_cnt << endl;
+            }
+
+            manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
+            for ( int i = 0; i < 20; i++ )
+            {
+                // int n_index = route.size()-i-1;
+                // int n_index = nodes.size()-i-1;
+                int n_index = i;
+                // cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
+                // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
+                manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route[n_index].x;
+                manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route[n_index].y;
+            }
+            //
             // RRT* High Level Planner - END
 
 
@@ -303,26 +332,7 @@ int main(int argc, const char * argv[]) {
 
             /* LATERAL CONTROLLER - BEGIN */
             //
-            // static double yaw_rate = 0;
-            // yaw_rate = in->YawRateFild;
-
-            // 1. Calculate vehicle orientation
-            static double init_lat_offsL = in->LatOffsLineL; // initial lateral position of the vehicle
-            static Pos init_vehicle_pos = { 0, 0, 0 };       // initial position and attitude of the vehicle
-            static double last_lat_offsL = in->LatOffsLineL;
-            static double last_dist_travelled = dist_travelled;
-            double curr_lat_offsL = in->LatOffsLineL;
-            Pos curr_vehicle_pos = { dist_travelled-last_dist_travelled, last_lat_offsL-curr_lat_offsL, in->YawRateFild };
-
-            static int i = 0;
-            if ( i % 10 == 0 )
-            {
-                last_lat_offsL = curr_lat_offsL;
-                last_dist_travelled = dist_travelled;
-            }
-            i++;
-
-            
+            // 1. Calculate the yaw angle of the vehicle
             double yaw = atan2(curr_vehicle_pos.y, curr_vehicle_pos.x);
 
             // 2. Calculate the distance to the lane
@@ -334,7 +344,7 @@ int main(int argc, const char * argv[]) {
             double k_theta = -3;
 
             double req_delta = k_e*ep + k_theta*yaw;
-
+            //
             /* LATERAL CONTROLLER - END*/
 
             // LOGGING - Values from the Autonomous Agent logged for Data Analysis
@@ -367,17 +377,10 @@ int main(int argc, const char * argv[]) {
             printLogVar(message_id, "Time", num_seconds);
             printLogVar(message_id, "Status", in->Status);
             printLogVar(message_id, "CycleNumber", in->CycleNumber);
-            // printLogVar(message_id, "SteerWhAg", in->SteerWhlAg);
-            // printLogVar(message_id, "curr_lat_offsL", curr_lat_offsL);
-            // printLogVar(message_id, "last_lat_offsL",last_lat_offsL);
-            // printLogVar(message_id, "Initial offset", init_lat_offsL);
-            // printLogVar(message_id, "ep", ep);
-            // printLogVar(message_id, "yaw", yaw);
-            // printLogVar(message_id, "req_vel", req_vel);
-            // printLogVar(message_id, "right lane", in->LatOffsLineL);
-            // printLogVar(message_id, "cone_count", cone_count);
-            // printLogVar(message_id, "Cone[count] X", in->ObjX[cone_count]);
-            // printLogVar(message_id, "Cone[count] Y", in->ObjY[cone_count]);
+            printLogVar(message_id, "X", curr_vehicle_pos.x);
+            printLogVar(message_id, "Y", curr_vehicle_pos.y);
+            printLogVar(message_id, "req_vel", req_vel);
+            printLogVar(message_id, "vel", v0);
 
             // Send manoeuvre message to the environment
             if (server_send_to_client(server_run, message_id, &manoeuvre_msg.data_struct) == -1) {
