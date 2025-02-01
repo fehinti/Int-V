@@ -43,7 +43,7 @@ class Point(VirtualObject):
         self.state = 1
         self.x = x
         self.y = y
-        self.colour = self.BLUE
+        self.colour = self.RED
         self.size = self.PT_SIZE
         # self.reset()
 

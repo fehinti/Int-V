@@ -22,11 +22,6 @@ iteratively*/
 
 using namespace std;
 
-// typedef struct RoutePoint
-// {
-//     double x;
-//     double y;
-// }Point;
 
 /* Header file from a project found online
 Credits
@@ -105,7 +100,14 @@ struct Point {
     }
 };
 
+ftype minimum_distance(Point v, Point w, Point p);
+//
 // END
+/* Header file from a project found online
+Credits
+Author: Nikhil Chandak
+Link:  https://github.com/nikhilchandak/Rapidly-Exploring-Random-Trees.git*/
+
 
 typedef struct Obstacle
 {

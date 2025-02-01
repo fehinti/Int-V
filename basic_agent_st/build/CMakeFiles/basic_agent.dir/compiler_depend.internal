@@ -718,6 +718,7 @@ CMakeFiles/basic_agent.dir/matlab/primitives/rt_nonfinite.cpp.o
 CMakeFiles/basic_agent.dir/starting_point.cc.o
  /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/starting_point.cc
  /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/PathPlanning/HLPlanner.h
+ /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/PathPlanning/functions.h
  /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/lib/interfaces_data_structs.h
  /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/lib/server_lib.h
  /home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/log/logvars.h

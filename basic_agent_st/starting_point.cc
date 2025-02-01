@@ -8,6 +8,7 @@
 
 // --- CUSTOM INCLUDES ---
 #include "HLPlanner.h"
+#include "functions.h"
 // --- CUSTOM INCLUDES ---
 
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include <math.h>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 extern "C" {
 #include "screen_print_c.h"
@@ -22,20 +24,6 @@ extern "C" {
 #include "screen_print.h"
 #include "server_lib.h"
 #include "logvars.h"
-
-
-// CUSTOM #define START
-
-#define COEFFS_DIM 6
-
-// CUSTOM #define END
-
-// CUSTOM Function Prototypes - BEGIN
-
-int IsCoeffZero( const double coeffs[] );
-void MovingAverage( double *avg, double val, int n );
-
-// CUSTOM Function Prototypes - END
 
 #define DEFAULT_SERVER_IP    "127.0.0.1"
 #define SERVER_PORT               30000  // Server port
@@ -124,8 +112,8 @@ int main(int argc, const char * argv[]) {
             static double last_lat_offsL = in->LatOffsLineL;
             static double last_dist_travelled = dist_travelled;
             double curr_lat_offsL = in->LatOffsLineL;
-            Point curr_vehicle_pos = { dist_travelled-last_dist_travelled, last_lat_offsL-curr_lat_offsL };
-            // Point veh_pt = { dist_travelled, curr_lat_offsL };
+            Point d_veh_pt = { dist_travelled-last_dist_travelled, last_lat_offsL-curr_lat_offsL };
+            Point veh_pt = { dist_travelled, -in->LatOffsLineR+in->LaneWidth/2 };
 
             static int i = 0;
             if ( i % 10 == 0 )
@@ -134,6 +122,12 @@ int main(int argc, const char * argv[]) {
                 last_dist_travelled = dist_travelled;
             }
             i++;
+
+            // 1. Calculate the yaw angle of the vehicle
+            double yaw = atan2(d_veh_pt.y, d_veh_pt.x);
+
+            double L_h = 1.5; // preview point look ahead distance
+            Point P_h = { veh_pt.x + L_h*cos(yaw), veh_pt.y + L_h*sin(yaw) }; // preview point
             //
             // LATERAL CONTROLLER [First part of the controller] - END
 
@@ -147,7 +141,6 @@ int main(int argc, const char * argv[]) {
             {
                 hl_planner.setLaneWidth(in->LaneWidth);
                 hl_planner.setStart({in->VehicleLen,0});
-                // hl_planner.setStart({in->VehicleLen,in->LatOffsLineL});
                 hl_planner.setTarget({in->TrfLightDist,-in->LaneWidth/4});
                 hl_planner.setSMax(5);
                 hl_planner.setMaxIter(10000);
@@ -163,6 +156,8 @@ int main(int argc, const char * argv[]) {
 
                 hl_planner.planRoute( nodes );
                 hl_planner.getRoute( route );
+                route = MovingAverage( route, 3 );
+                deque<Point> route_smoothe = MovingAverage( route, 3 );
                 Point target = hl_planner.getTarget();
                 cout << "Total nodes: " << nodes.size() << endl;
                 
@@ -170,25 +165,47 @@ int main(int argc, const char * argv[]) {
                     rrt_params_flag = false;
             }
 
-            static int route_cnt = 0;
-            if ( dist_travelled > route[route_cnt].x && route_cnt < route.size() )
+            // linear regression sample size
+            int sample_size = 3, sample_cnt = 0;
+            // for (int j = 0; j < min(n, i + sample_size / 2 + 1); ++j)
+            deque<Point> sample_points;
+            for (int i = 0; i < route.size(); i++)
             {
-                route.pop_front();
-                route_cnt++;
-                cout << "Route count: " << route_cnt << endl;
+                if ( veh_pt.x > route[i].x )
+                {
+                    route.pop_front();
+                    continue;
+                }
+                
+                if ( sample_cnt < sample_size )
+                {
+                    sample_cnt++;
+                    sample_points.push_back( route[i] );
+                    cout << "Sample point: " << route[i].x << " " << route[i].y << endl;
+                }
+                else
+                {
+                    break;
+                }
             }
+            pair<double, double> p_line = ComputePath(sample_points, sample_size, 0.3);
+            cout << "Slope: " << p_line.first << " Intercept: " << p_line.second << endl;
 
-            manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
-            for ( int i = 0; i < 20; i++ )
+            if ( route.size() > 0 )
             {
-                // int n_index = route.size()-i-1;
-                // int n_index = nodes.size()-i-1;
-                int n_index = i;
-                // cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
-                // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
-                manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route[n_index].x;
-                manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route[n_index].y;
+                manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
+                for ( int i = 0; i < 20; i++ )
+                {
+                    // int n_index = route.size()-i-1;
+                    // int n_index = nodes.size()-i-1;
+                    int n_index = i;
+                    // cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
+                    // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
+                    manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route[n_index].x;
+                    manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route[n_index].y;
+                }
             }
+            // Refer to LATERAL CONTROLLER [second part of the controller] below
             //
             // RRT* High Level Planner - END
 
@@ -332,18 +349,21 @@ int main(int argc, const char * argv[]) {
 
             /* LATERAL CONTROLLER - BEGIN */
             //
-            // 1. Calculate the yaw angle of the vehicle
-            double yaw = atan2(curr_vehicle_pos.y, curr_vehicle_pos.x);
 
             // 2. Calculate the distance to the lane
 
-            double ep = init_lat_offsL - curr_lat_offsL;
+            // double ep = init_lat_offsL - curr_lat_offsL;
+            Point p_line_A = {veh_pt.x,ComputeY(veh_pt.x, p_line.first,p_line.second)};
+            Point p_line_B = {P_h.x,ComputeY(P_h.x, p_line.first,p_line.second)};
+            double ep = minimum_distance(p_line_A, p_line_B, veh_pt);
+            double theta_p = atan2(p_line_B.y - p_line_A.y, p_line_B.x - p_line_A.x);
+            double theta_e = yaw - theta_p;
 
             // tunable distance and angular error coefficients
             double k_e = -0.075;
-            double k_theta = -3;
+            double k_theta = -2;
 
-            double req_delta = k_e*ep + k_theta*yaw;
+            double req_delta = k_e*ep + k_theta*theta_e;
             //
             /* LATERAL CONTROLLER - END*/
 
@@ -377,10 +397,14 @@ int main(int argc, const char * argv[]) {
             printLogVar(message_id, "Time", num_seconds);
             printLogVar(message_id, "Status", in->Status);
             printLogVar(message_id, "CycleNumber", in->CycleNumber);
-            printLogVar(message_id, "X", curr_vehicle_pos.x);
-            printLogVar(message_id, "Y", curr_vehicle_pos.y);
+            printLogVar(message_id, "dX", d_veh_pt.x);
+            printLogVar(message_id, "dY", d_veh_pt.y);
+            printLogVar(message_id, "X", veh_pt.x);
+            printLogVar(message_id, "Y", veh_pt.y);
+            printLogVar(message_id, "Yaw", yaw);
             printLogVar(message_id, "req_vel", req_vel);
             printLogVar(message_id, "vel", v0);
+            printLogVar(message_id, "ep", ep);
 
             // Send manoeuvre message to the environment
             if (server_send_to_client(server_run, message_id, &manoeuvre_msg.data_struct) == -1) {
@@ -395,17 +419,4 @@ int main(int argc, const char * argv[]) {
     // Close the server of the agent
     server_agent_close();
     return 0;
-}
-
-int IsCoeffZero( const double coeffs[] )
-{
-    double sum = 0;
-
-    for ( size_t i=0; i<COEFFS_DIM ;i++ )
-    {   
-        sum += coeffs[i];
-    }
-
-    if ( sum == 0 ) return 1;
-    else return 0;
 }

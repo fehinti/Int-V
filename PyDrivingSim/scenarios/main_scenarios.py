@@ -95,19 +95,19 @@ class BasicLateralControllerTest():
 class AddPoint():
     def __init__(self, av:AutonomousVehicle):
         self.points = []
-        self.last_point = None
+        self.first_point = None
         self.av = av
 
     def update(self):
         if self.points.__len__() == 0:
             for point in self.av.trajectory:
                 self.points.append(Point(point[0],point[1]))
-        elif self.av.trajectory[-1] != self.last_point:
+        elif self.av.trajectory[1] != self.first_point:
             for point in self.points:
                 point.reset()
             self.points.clear()
             for point in self.av.trajectory:
                 self.points.append(Point(point[0],point[1]))
+
         if self.av.trajectory.__len__() > 0:
-            self.last_point = self.av.trajectory[-1]
-                # print(self.av.trajectory.__len__())
+            self.first_point = self.av.trajectory[1]

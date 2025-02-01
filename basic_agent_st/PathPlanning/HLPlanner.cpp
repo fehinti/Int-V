@@ -35,6 +35,12 @@ Point stepNear(Point& p1, Point& p2, ftype DELTA) {
     }
 }
 
+
+// helper function
+int sign(const ftype x) { 
+    return x >= 0 ? x ? 1 : 0 : -1; 
+}
+
 // Return minimum distance between line segment vw and point p
 ftype minimum_distance(Point v, Point w, Point p) {
   ftype l2 = distance(v, w);  l2 *= l2 ; // i.e. |w-v|^2 -  avoid a sqrt
@@ -47,7 +53,9 @@ ftype minimum_distance(Point v, Point w, Point p) {
   const ftype t = max(0.0, min(1.0, dot(p - v, w - v) / l2));
 
   Point projection = v + t * (w - v);  // Projection falls on the segment
-  return distance(p, projection);
+
+  int dir = sign((v.x - w.x) * (p.y - w.y) - (v.y - w.y) * (p.x - w.x)); // Check if the point is on the left or right side of the line
+  return dir>0? -distance(p, projection) : distance(p, projection); // Return the distance with sign
 }
 
 struct Polygon {
@@ -108,11 +116,6 @@ bool PointInPolygon(Point point, Polygon polygon) {
   return c;
 }
 
-// helper function
-int sign(const ftype x) { 
-    return x >= 0 ? x ? 1 : 0 : -1; 
-}
-
 /*  Returns true if two line segments on the same line intersect.
     (a, b) denote the endpoints of first line segment and 
     (c, d) denotes the endpoints of the second lint segment */
@@ -148,8 +151,12 @@ bool lineSegmentIntersectsPolygon(Point a, Point b, Polygon& polygon) {
     }
     return false ; 
 }
-
+//
 // END
+/* Header file from a project found online
+Credits
+Author: Nikhil Chandak
+Link:  https://github.com/nikhilchandak/Rapidly-Exploring-Random-Trees.git*/
 
 HLPlanner::HLPlanner(double lane_width, double target_dist):
 max_iter(1000),
