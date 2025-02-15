@@ -126,7 +126,7 @@ int main(int argc, const char * argv[]) {
             // 1. Calculate the yaw angle of the vehicle
             double yaw = atan2(d_veh_pt.y, d_veh_pt.x);
 
-            double L_h = 1.5; // preview point look ahead distance
+            double L_h = 2.5; // preview point look ahead distance
             Point P_h = { veh_pt.x + L_h*cos(yaw), veh_pt.y + L_h*sin(yaw) }; // preview point
             //
             // LATERAL CONTROLLER [First part of the controller] - END
@@ -151,13 +151,12 @@ int main(int argc, const char * argv[]) {
                 for ( int i = 0; i < in->NrObjs; i++ )
                 {
                     hl_planner.addObstacle( { in->ObjX[i], in->ObjY[i],
-                                             in->ObjWidth[i]*2, in->ObjLen[i]*2 } );
+                                             in->ObjWidth[i]*4, in->ObjLen[i]*4 } );
                 }
 
                 hl_planner.planRoute( nodes );
                 hl_planner.getRoute( route );
                 route = MovingAverage( route, 3 );
-                deque<Point> route_smoothe = MovingAverage( route, 3 );
                 Point target = hl_planner.getTarget();
                 cout << "Total nodes: " << nodes.size() << endl;
                 
@@ -193,8 +192,9 @@ int main(int argc, const char * argv[]) {
 
             if ( route.size() > 0 )
             {
-                manoeuvre_msg.data_struct.NTrajectoryPoints = 20;
-                for ( int i = 0; i < 20; i++ )
+                int route_size = route.size() < 20 ? route.size() : 20;
+                manoeuvre_msg.data_struct.NTrajectoryPoints = route_size;
+                for ( int i = 0; i < route_size; i++ )
                 {
                     // int n_index = route.size()-i-1;
                     // int n_index = nodes.size()-i-1;
@@ -360,8 +360,8 @@ int main(int argc, const char * argv[]) {
             double theta_e = yaw - theta_p;
 
             // tunable distance and angular error coefficients
-            double k_e = -0.075;
-            double k_theta = -2;
+            double k_e = -0.08;
+            double k_theta = -1.5;
 
             double req_delta = k_e*ep + k_theta*theta_e;
             //

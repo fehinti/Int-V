@@ -102,7 +102,7 @@ class AddPoint():
         if self.points.__len__() == 0:
             for point in self.av.trajectory:
                 self.points.append(Point(point[0],point[1]))
-        elif self.av.trajectory[1] != self.first_point:
+        elif self.av.trajectory[0] != self.first_point:
             for point in self.points:
                 point.reset()
             self.points.clear()
@@ -110,4 +110,5 @@ class AddPoint():
                 self.points.append(Point(point[0],point[1]))
 
         if self.av.trajectory.__len__() > 0:
-            self.first_point = self.av.trajectory[1]
+            self.first_point = self.av.trajectory[0]
+
