@@ -1,3 +1,0 @@
-/home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/build/CMakeFiles/basic_agent.dir
-/home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/build/CMakeFiles/edit_cache.dir
-/home/fehinti/Documents/UniTrento/Semester 3/Intelligent Vehicles and Autonomous Driving/Int-V/basic_agent_st/build/CMakeFiles/rebuild_cache.dir
