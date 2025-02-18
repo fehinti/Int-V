@@ -105,7 +105,7 @@ deque<Point> RemoveOutliers(const deque<Point>& points, double slope, double int
 }
 
 // Main function to compute path with moving average and linear regression
-pair<double, double> ComputePath(deque<Point> path, int sample_size, double outlierThreshold)
+pair<double, double> ComputePath(const deque<Point> &path, int sample_size, double outlierThreshold)
 {
     // Step 1: Apply Moving Average Filter
     // deque<Point> smoothedPath = MovingAverage(path, sample_size);
@@ -118,6 +118,13 @@ pair<double, double> ComputePath(deque<Point> path, int sample_size, double outl
 
     // Step 4: Perform Final Regression on Clean Data
     return LinearRegression(filteredPath);
+}
+
+pair<double, double> ComputePath(const Point &p1, const Point &p2)
+{
+    double slope = (p2.y - p1.y) / (p2.x - p1.x);
+    double intercept = p1.y - slope * p1.x;
+    return { slope, intercept };
 }
 
 double ComputeY(double x, double slope, double intercept)

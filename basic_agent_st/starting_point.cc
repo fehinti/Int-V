@@ -50,6 +50,7 @@ int main(int argc, const char * argv[]) {
     // RRT* High Level Planner
     HLPlanner hl_planner;
     deque<Point> route;
+    deque<Point> route_vis;
     vector < Point > nodes;
 
 #if not defined( _MSC_VER ) and not defined( _WIN32 )
@@ -134,7 +135,7 @@ int main(int argc, const char * argv[]) {
             
             // RRT* High Level Planner - BEGIN
             //
-            double rrt_lkahd = fmax( 50, v0*5 );
+            // double rrt_lkahd = fmax( 50, v0*5 );
             static bool rrt_params_flag = true;
 
             if ( rrt_params_flag )
@@ -150,49 +151,68 @@ int main(int argc, const char * argv[]) {
                 // Add obstacles to the HL planner
                 for ( int i = 0; i < in->NrObjs; i++ )
                 {
+                    // hl_planner.addObstacle( { in->ObjX[i], in->ObjY[i],
+                    //                          in->ObjWidth[i], in->ObjLen[i] } );
                     hl_planner.addObstacle( { in->ObjX[i], in->ObjY[i],
-                                             in->ObjWidth[i]*4, in->ObjLen[i]*4 } );
+                                             in->ObjWidth[i]*2, in->ObjLen[i]*2 } );
                 }
 
                 hl_planner.planRoute( nodes );
                 hl_planner.getRoute( route );
                 route = MovingAverage( route, 3 );
-                Point target = hl_planner.getTarget();
+                // Route deque for updates in visualisation
+                route_vis = route;
                 cout << "Total nodes: " << nodes.size() << endl;
                 
 
                     rrt_params_flag = false;
             }
 
-            // linear regression sample size
-            int sample_size = 3, sample_cnt = 0;
-            // for (int j = 0; j < min(n, i + sample_size / 2 + 1); ++j)
+            int sample_size = 2, sample_cnt = 0;
             deque<Point> sample_points;
+            Point last_point = {0,0};
             for (int i = 0; i < route.size(); i++)
             {
                 if ( veh_pt.x > route[i].x )
                 {
-                    route.pop_front();
+                    last_point = route[i];
                     continue;
                 }
-                
-                if ( sample_cnt < sample_size )
+                else if ( last_point.x > 0 )
                 {
+                    sample_points.push_back( last_point );
+                    cout << "Sample point [last]: " << last_point.x << " " << last_point.y << endl;
                     sample_cnt++;
-                    sample_points.push_back( route[i] );
-                    cout << "Sample point: " << route[i].x << " " << route[i].y << endl;
+
+                    last_point = {0,0};
                 }
                 else
+                {
+                    sample_points.push_back( route[i] );
+                    cout << "Sample point: " << route[i].x << " " << route[i].y << endl;
+                    sample_cnt++;
+                }
+
+                if ( sample_cnt == sample_size )
                 {
                     break;
                 }
             }
+            cout << "Sample size: " << sample_points.size() << endl;
             pair<double, double> p_line = ComputePath(sample_points, sample_size, 0.3);
             cout << "Slope: " << p_line.first << " Intercept: " << p_line.second << endl;
-
-            if ( route.size() > 0 )
+            
+            for (int i = 0; i < route_vis.size(); i++)
             {
-                int route_size = route.size() < 20 ? route.size() : 20;
+                if ( veh_pt.x > route_vis[i].x )
+                {
+                    route_vis.pop_front();
+                    break;
+                }
+            }
+            if ( route_vis.size() > 0 )
+            {
+                int route_size = route_vis.size() < 20 ? route_vis.size() : 20;
                 manoeuvre_msg.data_struct.NTrajectoryPoints = route_size;
                 for ( int i = 0; i < route_size; i++ )
                 {
@@ -201,8 +221,8 @@ int main(int argc, const char * argv[]) {
                     int n_index = i;
                     // cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
                     // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
-                    manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route[n_index].x;
-                    manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route[n_index].y;
+                    manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route_vis[n_index].x;
+                    manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route_vis[n_index].y;
                 }
             }
             // Refer to LATERAL CONTROLLER [second part of the controller] below
@@ -403,6 +423,7 @@ int main(int argc, const char * argv[]) {
             printLogVar(message_id, "Y", veh_pt.y);
             printLogVar(message_id, "Yaw", yaw);
             printLogVar(message_id, "req_vel", req_vel);
+            printLogVar(message_id, "req_delta", req_delta);
             printLogVar(message_id, "vel", v0);
             printLogVar(message_id, "ep", ep);
 

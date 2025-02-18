@@ -15,13 +15,6 @@ class PointSprite(pygame.sprite.Sprite):
         self.image.fill((point.colour))
         self.rect = self.image.get_rect(center=(point.x, point.y))
 
-    def draw(self):
-        center = [
-            (self.point.x - World().get_world_pos()[0]) * World().scaling_factor + World().screen_world_center[0],
-            (World().get_world_pos()[1] - self.point.y) * World().scaling_factor + World().screen_world_center[1]
-        ]
-        self.rect = pygame.draw.circle(World().screen, self.point.colour, center, self.point.size)
-
     def update(self):
         self.rect.center = [
             (self.point.x - World().get_world_pos()[0]) * World().scaling_factor + World().screen_world_center[0],
@@ -74,7 +67,3 @@ class Point(VirtualObject):
         if (self.state == 1):
             self.sprite.update()
             self.group.draw(World().screen)
-            # self.sprite.kill()
-        # self.sprite.update()
-        # self.group.draw(World().screen)
-

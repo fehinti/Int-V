@@ -67,6 +67,34 @@ class BasicTrafficLight():
         cone = TrafficCone()
         cone.set_pos((1.0,-2))
 
+        cone = TrafficCone()
+        cone.set_pos((12.0,2))
+        cone = TrafficCone()
+        cone.set_pos((12.0,1))
+        cone = TrafficCone()
+        cone.set_pos((12.0,0))
+        cone = TrafficCone()
+        cone.set_pos((12.0,-2))
+
+        cone = TrafficCone()
+        cone.set_pos((20.0,2))
+        cone = TrafficCone()
+        cone.set_pos((20.0,-1))
+        cone = TrafficCone()
+        cone.set_pos((20.0,0))
+        cone = TrafficCone()
+        cone.set_pos((20.0,-2))
+
+        # OBSTACLES result in => NO PATH
+        # cone = TrafficCone()
+        # cone.set_pos((35.0,2))
+        # cone = TrafficCone()
+        # cone.set_pos((35.0,-1))
+        # cone = TrafficCone()
+        # cone.set_pos((35.0,0))
+        # cone = TrafficCone()
+        # cone.set_pos((35.0,1))
+
         trafficlight = TrafficLight()
         trafficlight.set_pos((160,-3))
 
