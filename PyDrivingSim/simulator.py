@@ -24,7 +24,7 @@ def main():
     av = AutonomousVehicle()
     BasicTrafficLight()
     BasicSpeedLimit()
-    # BasicLateralControllerTest(7) # Cones added to test lateral controller
+    BasicLateralControllerTest(7) # Cones added to test lateral controller
     ap = AddPoint(av)                     # Add points to the path
 
     killer = GracefulKiller()
