@@ -120,13 +120,6 @@ pair<double, double> ComputePath(const deque<Point> &path, int sample_size, doub
     return LinearRegression(filteredPath);
 }
 
-pair<double, double> ComputePath(const Point &p1, const Point &p2)
-{
-    double slope = (p2.y - p1.y) / (p2.x - p1.x);
-    double intercept = p1.y - slope * p1.x;
-    return { slope, intercept };
-}
-
 double ComputeY(double x, double slope, double intercept)
 {
     return (slope*x + intercept);

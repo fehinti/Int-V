@@ -216,11 +216,7 @@ int main(int argc, const char * argv[]) {
                 manoeuvre_msg.data_struct.NTrajectoryPoints = route_size;
                 for ( int i = 0; i < route_size; i++ )
                 {
-                    // int n_index = route.size()-i-1;
-                    // int n_index = nodes.size()-i-1;
                     int n_index = i;
-                    // cout << "Node " << n_index << ": " << nodes[n_index].x << " " << nodes[n_index].y << endl;
-                    // cout << "Node " << i << ": " << nodes[i].x << " " << nodes[i].y << endl;
                     manoeuvre_msg.data_struct.TrajectoryPointIX[i] = route_vis[n_index].x;
                     manoeuvre_msg.data_struct.TrajectoryPointIY[i] = route_vis[n_index].y;
                 }
@@ -404,6 +400,11 @@ int main(int argc, const char * argv[]) {
             logger.log_var("Example", "C4", bestCoeff[4]);
             logger.log_var("Example", "C5", bestCoeff[5]);
             logger.log_var("Example", "T", bestT);
+
+            logger.log_var("Example", "vehX", veh_pt.x);
+            logger.log_var("Example", "vehY", veh_pt.y);
+            logger.log_var("Example", "slope", p_line.first);
+            logger.log_var("Example", "intercept", p_line.second);
 
             // ADD LOW LEVEL CONTROL CODE HERE
             manoeuvre_msg.data_struct.RequestedAcc = req_ped; /* Naming convention NOT ACCURATE, 
