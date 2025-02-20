@@ -143,7 +143,7 @@ int main(int argc, const char * argv[]) {
                 hl_planner.setLaneWidth(in->LaneWidth);
                 hl_planner.setStart({in->VehicleLen,0});
                 hl_planner.setTarget({in->TrfLightDist,-in->LaneWidth/4});
-                hl_planner.setSMax(1);
+                hl_planner.setSMax(5);
                 hl_planner.setMaxIter(10000);
 
                 hl_planner.setVehicle({ in->VehicleWidth, in->VehicleLen });
@@ -168,7 +168,7 @@ int main(int argc, const char * argv[]) {
                     rrt_params_flag = false;
             }
 
-            int sample_size = 5, sample_cnt = 0;
+            int sample_size = 2, sample_cnt = 0;
             deque<Point> sample_points;
             Point last_point = {0,0};
             for (int i = 0; i < route.size(); i++)
